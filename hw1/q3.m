@@ -234,24 +234,45 @@ sincperiod = tau_rf/4;               % sinc stretch parameter
 timerf  =  [-(nn-1)/2:(nn-1)/2]*dt;   % ms
 timetotal = [0:N-1]*dt;
 rf = hanning(length(timerf))'.*sinc(timerf./sincperiod); % sinc() is truncated
-
+[~,ind]= find(rf==max(rf(:)));
 gss = zeros(1,N);
 gss(1,1:nn) = [Gss*ones(1,nn)];        % T/m
 gss(nn+1:nn+1+floor(tau_rph/dt)) = -.025;         % T/m
 
-z = [-45:20:45]*1e-3;                   %m      
-dz = 0.05;                              % m
+dz = 0.005;                              % m
+
 rfsig = rf;
 timerf2  = [0:nn-1]*dt;   % ms
-rfmod = exp(i*2*pi*gammabar*1e3*gss(2)*dz.*timerf2);
-rf2 = [rfsig.*rfmod + rfsig.*conj(rfmod)];
-rfsig = rf2;
+% rfmod = exp(i*2*pi*gammabar*1e3*gss(2)*dz.*timerf2);
+% rf2 = [rfsig.*rfmod + rfsig.*conj(rfmod)];
+% rfsig = rf2;
+
+rf3 = 0;
+% adding the phase 
+phi = 0:pi/2:2*pi;                      % rad
+z = [-40:20:40];                        % mm      
+
+P=0;
+for kk = 1: length(z)
+    rfmodsum = exp(i*2*pi*gammabar*gss(2)*z(kk).*timerf2);
+    phse = phase(rfmodsum(ind(1)));
+    ptmp = rfmodsum.*exp(phse);
+    % rf2 = [rfsig.*rfmod + rfsig.*conj(rfmod)]; 
+    % rfamp = phi(kk)/(2*pi*gammabar*1e3*sum(rf2)*tau_rf);
+    P = P + ptmp;%.*rfamp;
+end
+
+rfmb = rfsig.*P;
+rf90 = (pi/2)/(2*pi*gammabar*1e3*sum(rfmb)*tau_rf);   % T
 
 % rf amplitude, 90 degree pulse: b1
-rf90 = (pi/2)/(2*pi*gammabar*1e3*sum(rfsig)*tau_rf);   % T
+% rf90 = (pi/2)/(2*pi*gammabar*1e3*sum(rfsig)*tau_rf);   % T
 
 rf_signal = zeros(1,N);
-rf_signal(1:nn) = rf2.*rf90;                          % T 
+% rf_signal(1:nn) = rf2.*rf90;                          % T 
+
+rf_signal(1:nn) = rfmb.*rf90;                          % T 
+
 
 df = 0;
 pos = [-50:dt:50];                              % mm
@@ -259,9 +280,9 @@ pos = [-50:dt:50];                              % mm
 [mmsig,mm] = sprofile(rf_signal,gss,tau_rf,T1,T2,pos,df,dt,gammabar);
 
 figure;
+plot(timetotal,abs(rf_signal)*1e6);xlabel('Time (ms)'); 
+ylabel('(uT)');title('SMS pulse');grid on;fontsize(14,"points");
+figure;
 plot(pos,abs(mmsig));title('Slice Profile');grid on;
-xlabel('Position (mm)');ylabel('Signal Magnitude');
-plot(pos,mm(3,:));title('Slice Profile');grid on;
-xlabel('Position (mm)');ylabel('M_{z}');
+xlabel('Position (mm)');ylabel('Signal Magnitude');grid on;fontsize(14,"points");
 
-% ref: mribri999/MRSignalsSeqs
