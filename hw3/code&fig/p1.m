@@ -37,7 +37,7 @@ fontsize(gcf, fontSize, "points");
 saveas(gcf,'./figs_p1/a_partialKspace.png');
 close;
 
-figure;
+figure('Renderer', 'painters', 'Position', [50 50 1000 500]);set(gcf,'DefaultLineLineWidth',2);subplot(121);
 subplot(121);
 imagesc(abs(im_zf));colormap gray; title('Magnitude');axis image, axis off;
 fontsize(gcf, fontSize, "points");
@@ -50,7 +50,7 @@ close;
 
 % full-kspace
 im_recon = ifftdim(kspaceData_SingleCoil,1:2);
-figure,
+figure('Renderer', 'painters', 'Position', [50 50 1000 500]);set(gcf,'DefaultLineLineWidth',2);subplot(121);
 subplot(121);
 imagesc(abs(im_recon));axis image, axis off;
 colormap gray; title('Magnitude');axis image, axis off;
@@ -65,7 +65,7 @@ close;
 %difference
 im_diff = im_recon - im_zf;
 lm = abs(im_diff(:));
-figure,
+figure('Renderer', 'painters', 'Position', [50 50 1000 500]);set(gcf,'DefaultLineLineWidth',2);subplot(121);
 subplot(121);
 imagesc(abs(im_diff),[0+1e-5 max(lm)-0.0005]);axis image, axis off;
 colormap gray; title('Mag. diff');
@@ -93,18 +93,19 @@ filter  = repmat(winAll,[1 200]);
 ks_phase = kspace_zf.*filter;
 
 figure;
-imagesc(abs(ks_phase),[0 1]); colormap gray;
+imagesc(abs(ks_phase),[0 1*1e-1]); colormap gray;
 title('kspace multiplied by Hann filter');
 fontsize(gcf, fontSize, "points"); close;
 
 im_pksp = ifftdim(kspaceData_SingleCoil,1:2);
 imMag = ifftshift(ifft2(fftshift(ks_phase)));
 imPhase = angle(imMag);
-kspCorrected = kspace_zf;
+kspCorrected = kspace_zf;            % ini kspace
 
-iter = 1:10;
+iter = 1:20;
 
-for ii = iter
+tmpdif = [2 1]; ii =1;
+while (mean(abs(tmpdif(:)))>5*1e-3) || (ii<= max(iter))
     if ii == 1
         im_pksp = ifftdim(kspace_zf,1:2);
     else
@@ -114,12 +115,18 @@ for ii = iter
     imNew = abs(im_pksp).*exp(-i*imPhase);
     kspNew = fftshift(fft2(ifftshift(imNew)));
     
+    tmpdif = kspCorrected(numEnd+1:end,:) - kspNew(numEnd+1:end,:);
+
     kspCorrected(numEnd+1:end,:) = kspNew(numEnd+1:end,:);
+ 
     ks_phase = kspCorrected;
+    
     if ii == max(iter)
         im_pksp = ifftdim(ks_phase,1:2);
     end
+    ii = ii + 1;
 end
+
 
 % Step 1:
 figure('Renderer', 'painters', 'Position', [50 50 1000 500]);set(gcf,'DefaultLineLineWidth',2);subplot(121);
@@ -149,7 +156,7 @@ close;
 %difference
 im_diff = im_recon - im_pksp;
 lm = abs(im_diff(:));
-figure,
+figure('Renderer', 'painters', 'Position', [50 50 1000 500]);set(gcf,'DefaultLineLineWidth',2);subplot(121);
 subplot(121);
 imagesc(abs(im_diff),[0+1e-5 max(lm)-0.0005]);axis image, axis off;
 colormap gray; title('Mag. diff');
