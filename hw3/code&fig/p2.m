@@ -37,9 +37,10 @@ saveas(gcf,'./figs_p2/a_brainIm.png');
 close;
 orig = imCombined2;
 
-coilIm = imCombined2.*coilCombined;
+coilIm = conj(coilmaps).*imCombined;
+coilImf = sqrt(sum(abs(coilIm).^2,3));
 figure;
-imagesc(abs(coilIm));axis image, axis off;
+imagesc(abs(coilImf));axis image, axis off;
 colormap gray; title('Coil combined Image');
 fontsize(gcf, fontSize, "points");
 saveas(gcf,'./figs_p2/a_coilComb.png');
